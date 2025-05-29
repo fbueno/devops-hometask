@@ -4,7 +4,6 @@
 - name: Remove green deployment
   hosts: localhost
   gather_facts: false
-  #no_log: true
   collections:
     - kubernetes.core
   vars:
@@ -13,22 +12,6 @@
     release: blue
     old_release: green
   tasks:
-    - name: Remove deploy
-      kubernetes.core.k8s:
-        state: absent
-        api_version: apps/v1
-        kind: Deployment
-        name: "{{ app_name }}-{{ old_release }}"
-        namespace: default
-
-    - name: Wait for app to be removed
-      kubernetes.core.k8s_info:
-        api_version: apps/v1
-        kind: Deployment
-        namespace: default
-        name: "{{ app_name }}-{{ old_release }}"
-      until: (deployment_info.resources | length) == 0
-
     - name: "Switch traffic to {{ release }} deployment"
       kubernetes.core.k8s:
         state: patched
@@ -53,3 +36,10 @@
       when: service_info.resources | length > 0
       failed_when: service_info.resources | length == 0
       changed_when: false
+    - name: Remove deploy
+      kubernetes.core.k8s:
+        state: absent
+        api_version: apps/v1
+        kind: Deployment
+        name: "{{ app_name }}-{{ old_release }}"
+        namespace: default

@@ -49,3 +49,4 @@ jobs:
           --namespace argo \
           --watch \
           --request-timeout 10m
+        argo logs --namespace argo $(argo list --namespace argo -o name | head -n1)

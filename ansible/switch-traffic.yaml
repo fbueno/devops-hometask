@@ -4,7 +4,6 @@
 - name: Blue/Green switch traffic
   hosts: localhost
   gather_facts: false
-  no_log: true
   collections:
     - kubernetes.core
   vars:
@@ -22,6 +21,7 @@
         definition:
           spec:
             selector:
+              release: "{{ release }}"
 
     - name: "Register switched traffic to {{ release }} deployment"
       kubernetes.core.k8s_info:

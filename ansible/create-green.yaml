@@ -4,7 +4,6 @@
 - name: Blue/Green deployment tasks
   hosts: localhost
   gather_facts: false
-  #no_log: true
   collections:
     - kubernetes.core
   vars:
@@ -53,7 +52,7 @@
                     image: "nginxdemos/hello:{{ image_tag }}"
                     ports:
                       - containerPort: 80
-                    readinessProle:
+                    readinessProbe:
                       httpGet:
                         path: /
                         port: 80
