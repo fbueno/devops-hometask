@@ -1,7 +1,7 @@
 ---
 # Playbook executed by Argo step "rollback"
 # Inventory will be the Kubernetes cluster via the community.kubernetes collection
-- name: Remove green deployment
+- name: Rollback to blue deploy
   hosts: localhost
   gather_facts: false
   collections:
@@ -36,6 +36,7 @@
       when: service_info.resources | length > 0
       failed_when: service_info.resources | length == 0
       changed_when: false
+
     - name: Remove deploy
       kubernetes.core.k8s:
         state: absent
