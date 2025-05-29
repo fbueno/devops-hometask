@@ -8,8 +8,8 @@
   collections:
     - kubernetes.core
   vars:
-    app_name: "{{ app_name | default('demo-app') }}"
-    release: "{{ release | default('green') }}"
+    app_name: demo-app
+    release: green
   tasks:
     # TODO 3: (Later step) Patch Service selector to release=green **atomically**
     #         This task can live in a separate play that the workflow calls
