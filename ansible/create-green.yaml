@@ -4,13 +4,13 @@
 - name: Blue/Green deployment tasks
   hosts: localhost
   gather_facts: false
-  no_log: true
+  #no_log: true
   collections:
     - kubernetes.core
   vars:
-    image_tag: "{{ image_tag | default('plaintext') }}"
-    app_name: "{{ app_name | default('demo-app') }}"
-    release: "{{ release | default('green') }}"
+    image_tag: plaintext
+    app_name: demo-app
+    release: green
   tasks:
   #   - name: Verify variables
   #     ansible.builtin.assert:
