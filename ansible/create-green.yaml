@@ -8,7 +8,7 @@
   collections:
     - kubernetes.core
   vars:
-    image_tag: plaintext
+    image_tag: plain-text
     app_name: demo-app
     release: green
   tasks:
