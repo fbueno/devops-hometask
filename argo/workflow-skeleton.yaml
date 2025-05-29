@@ -34,6 +34,7 @@ spec:
           parameters:
           - name: play
             value: switch-traffic.yaml
+
       # Is this needed? If smoke test fails it doesnt switch traffic
       - name: rollback
         dependencies: [smoke-test]
@@ -51,9 +52,13 @@ spec:
       parameters:
       - name: play
     container:
+
       image: quay.io/ansible/ansible-runner:latest
       command: [bash, -exc]
-      workingDir: /devops-hometask
+      workingDir: /devops-hometask/
+      env:
+      - name: ANSIBLE_CONFIG
+        value: /devops-hometask/ansible/ansible.cfg
       args:
       - |
         pip3 install kubernetes pyyaml jsonpath
@@ -71,11 +76,12 @@ spec:
     script:
       image: python:3.12-alpine
       command: [sh]
-      workingDir: /devops-hometask
+      workingDir: /devops-hometask/
       source: |
         pip install --quiet ansible-lint yamllint
-        ansible-lint .
         yamllint -d relaxed .
+        cd ansible
+        ansible-lint .
 
   # --- smoke-test ----------------------------------------------------
   - name: smoke-test
