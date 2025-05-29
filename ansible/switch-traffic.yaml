@@ -22,4 +22,17 @@
         definition:
           spec:
             selector:
-              release: "{{ release }}"
+
+    - name: "Register switched traffic to {{ release }} deployment"
+      kubernetes.core.k8s_info:
+        kind: Service
+        namespace: default
+        name: "{{ app_name }}"
+      register: service_info
+
+    - name: "Show switched traffic to {{ release }} deployment"
+      debug:
+        msg: "Service {{ app_name }} now points to {{ service_info.resources[0].spec.selector.release }}"
+      when: service_info.resources | length > 0
+      failed_when: service_info.resources | length == 0
+      changed_when: false

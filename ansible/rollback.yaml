@@ -27,11 +27,7 @@
         kind: Deployment
         namespace: default
         name: "{{ app_name }}-{{ old_release }}"
-        wait: true
-        wait_sleep: 1
-        wait_timeout: 120
-      register: deployment_info
-      until: deployment_info.resources is defined and (deployment_info.resources | length) == 0
+      until: (deployment_info.resources | length) == 0
 
     - name: "Switch traffic to {{ release }} deployment"
       kubernetes.core.k8s:
@@ -43,3 +39,17 @@
           spec:
             selector:
               release: "{{ release }}"
+
+    - name: "Register switched traffic to {{ release }} deployment"
+      kubernetes.core.k8s_info:
+        kind: Service
+        namespace: default
+        name: "{{ app_name }}"
+      register: service_info
+
+    - name: "Show switched traffic to {{ release }} deployment"
+      debug:
+        msg: "Service {{ app_name }} now points to {{ service_info.resources[0].spec.selector.release }}"
+      when: service_info.resources | length > 0
+      failed_when: service_info.resources | length == 0
+      changed_when: false
