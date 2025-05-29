@@ -3,7 +3,7 @@ name: self-test
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [master]
 
 jobs:
   e2e:
@@ -32,7 +32,8 @@ jobs:
         kubectl wait deployment/workflow-controller -n argo \
           --for=condition=Available --timeout=120s
 
-        curl -sLO https://github.com/argoproj/argo-workflows/releases/download/v3.5.7/argo-linux-amd64
+        curl -sLO "https://github.com/argoproj/argo-workflows/releases/download/v3.6.7/argo-linux-amd64.gz"
+        gunzip argo-linux-amd64.gz
         sudo install -o root -g root -m 0755 argo-linux-amd64 /usr/local/bin/argo
         argo version
 
@@ -47,4 +48,4 @@ jobs:
         argo submit argo/workflow-skeleton.yaml \
           --namespace argo \
           --watch \
-          --timeout 10m
+          --request-timeout 10m

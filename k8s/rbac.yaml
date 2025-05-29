@@ -16,6 +16,7 @@ rules:
   - apps
   - networking.k8s.io
   - apiextensions.k8s.io
+  - argoproj.io
   resources: ["*"]
   verbs: ["*"]
 ---

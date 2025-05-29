@@ -6,7 +6,7 @@ metadata:
 spec:
   entrypoint: nightly-release
   serviceAccountName: argo-workflow       # created by Argo quick-start
-  onExit: rollback        # always invoked
+#  onExit: rollback        # always invoked
   templates:
   - name: nightly-release
     dag:
@@ -20,7 +20,7 @@ spec:
         arguments:
           parameters:
           - name: play
-            value: create-green.yml
+            value: create-green.yaml
 
       # TODO: add smoke-test, switch-traffic, etc.
       - name: smoke-test
@@ -30,7 +30,7 @@ spec:
       - name: switch-traffic
         dependencies: [smoke-test]
         template: ansible
-        when: "{{ taks.smoke-test.status }} = Succeeded"
+        when: "{{ tasks.smoke-test.status }} == Succeeded"
         arguments:
           parameters:
           - name: play
@@ -39,30 +39,37 @@ spec:
   # --- generic template to run ansible-runner ------------------
   - name: ansible
     inputs:
+      artifacts:
+      - name: devops-hometask
+        path: /devops-hometask
+        git:
+          repo: https://github.com/fbueno/devops-hometask.git
       parameters:
       - name: play
-    git:
-      path: /devops-hometask
-      repo: https://github.com/fbueno/devops-hometask.git
     container:
       image: quay.io/ansible/ansible-runner:latest
       command: [bash, -exc]
+      workingDir: /devops-hometask
       args:
       - |
-        cd /devops-hometask
+        pip3 install kubernetes pyyaml jsonpath
+        ansible-galaxy collection install kubernetes.core
         ansible-runner run ansible -p {{inputs.parameters.play}}
 
   # --- lint ----------------------------------------------------
   - name: lint
-    git:
-      path: /devops-hometask
-      repo: https://github.com/fbueno/devops-hometask.git
+    inputs:
+      artifacts:
+      - name: devops-hometask
+        path: /devops-hometask
+        git:
+          repo: https://github.com/fbueno/devops-hometask.git
     script:
       image: python:3.12-alpine
       command: [sh]
+      workingDir: /devops-hometask
       source: |
         pip install --quiet ansible-lint yamllint
-        cd /devops-hometask
         ansible-lint .
         yamllint -d relaxed .
 
@@ -70,22 +77,25 @@ spec:
   - name: smoke-test
     script:
       image: curlimages/curl
-      command: [bash]
+      command: [sh]
       source: |
-        ips=$(kubectl get pods -n default -l  release=grenn -o custom-colums=ip:.status.podIP --no-headers)
+        set -x
+        curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+        chmod +x kubectl
+        ips=$(./kubectl get pods -n default -l  release=green -o custom-columns=ip:.status.podIP --no-headers)
         for pod in $ips
         do
           echo "Smoke test pod $pod"
           curl --fail http://${pod}/ || exit $?
         done
 
-  # --- rollback skeleton --------------------------------------
-  - name: rollback
-    dag:
-      tasks:
-      - name: cleanup
-        template: ansible
-        arguments:
-          parameters:
-          - name: play
-            value: rollback.yml
+  # # --- rollback skeleton --------------------------------------
+  # - name: rollback
+  #   dag:
+  #     tasks:
+  #     - name: cleanup
+  #       template: ansible
+  #       arguments:
+  #         parameters:
+  #         - name: play
+  #           value: rollback.yml
