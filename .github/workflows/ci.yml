@@ -48,5 +48,5 @@ jobs:
         argo submit argo/workflow-skeleton.yaml \
           --namespace argo \
           --watch \
-          --request-timeout 10m
-        argo logs --namespace argo $(argo list --namespace argo -o name | head -n1)
+          --request-timeout 10m \
+          --log
