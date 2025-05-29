@@ -6,7 +6,7 @@ metadata:
 spec:
   entrypoint: nightly-release
   serviceAccountName: argo-workflow       # created by Argo quick-start
-#  onExit: rollback        # always invoked
+  onExit: rollback        # always invoked
   templates:
   - name: nightly-release
     dag:
@@ -89,13 +89,13 @@ spec:
           curl --fail http://${pod}/ || exit $?
         done
 
-  # # --- rollback skeleton --------------------------------------
-  # - name: rollback
-  #   dag:
-  #     tasks:
-  #     - name: cleanup
-  #       template: ansible
-  #       arguments:
-  #         parameters:
-  #         - name: play
-  #           value: rollback.yml
+  # --- rollback skeleton --------------------------------------
+  - name: rollback
+    dag:
+      tasks:
+      - name: cleanup
+        template: ansible
+        arguments:
+          parameters:
+          - name: play
+            value: rollback.yaml
