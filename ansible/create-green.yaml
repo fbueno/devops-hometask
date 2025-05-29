@@ -1,0 +1,73 @@
+---
+# Playbook executed by Argo step "create-green"
+# Inventory will be the Kubernetes cluster via the community.kubernetes collection
+- name: Blue/Green deployment tasks
+  hosts: localhost
+  gather_facts: false
+  no_log: true
+  collections:
+    - kubernetes.core
+  vars:
+    image_tag: "{{ image_tag | default('plaintext') }}"
+    app_name: "{{ app_name | default('demo-app') }}"
+    release: "{{ release | default('green') }}"
+  tasks:
+  #   - name: Verify variables
+  #     ansible.builtin.assert:
+  #       that:
+  #         - image_tag is defined
+  #         - release is defined
+  #         - app_name is defined
+  #       fail_msg: "image_tag, release and app_name variables must be define on command line"
+    # TODO 1: Create green Deployment demo-app-green (release=green, replicas=2)
+    #         Hint: community.kubernetes.k8s module with state=present
+    - name: Create deploy
+      kubernetes.core.k8s:
+        state: present
+        api_version: apps/v1
+        definition:
+          kind: Deployment
+          apiVersion: apps/v1
+          metadata:
+            name: "{{ app_name }}-{{ release }}"
+            namespace: default
+            labels:
+              app: "{{ app_name }}"
+              release: "{{ release }}"
+          spec:
+            replicas: 2
+            selector:
+              matchLabels:
+                app: "{{ app_name }}"
+                release: "{{ release }}"
+            template:
+              metadata:
+                name: "{{ app_name }}-{{ release }}"
+                namespace: default
+                labels:
+                  app: "{{ app_name }}"
+                  release: "{{ release }}"
+              spec:
+                containers:
+                  - name: web
+                    image: "nginxdemos/hello:{{ image_tag }}"
+                    ports:
+                      - containerPort: 80
+                    readinessProle:
+                      httpGet:
+                        path: /
+                        port: 80
+                      periodSeconds: 5
+    # TODO 2: Wait for ready_replicas == replicas
+    #         Hint: use k8s_info or k8s_info & until loop
+    - name: Wait for app to be created and ready
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        namespace: default
+        name: "{{ app_name }}-{{ release }}"
+        wait: true
+        wait_sleep: 1
+        wait_timeout: 10
+      register: deployment_info
+      until: deployment_info.resources is defined and (deployment_info.resources | length) > 0 and deployment_info.resources is defined and deployment_info.resources[0].status.replicas == 2

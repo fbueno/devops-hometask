@@ -1,0 +1,50 @@
+name: self-test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  e2e:
+    name: Blue/Green E2E
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Spin up Kind cluster
+      uses: helm/kind-action@v1
+      with:
+        version: v0.23.0
+        cluster_name: argo-task
+
+    - name: Install Argo Workflows (controller) and CLI
+      run: |
+        set -euo pipefail
+
+        kubectl create ns argo
+        kubectl apply -n argo \
+          -f https://raw.githubusercontent.com/argoproj/argo-workflows/v3.5.7/manifests/quick-start-postgres.yaml
+
+        # Wait until the workflow-controller Deployment is ready
+        kubectl wait deployment/workflow-controller -n argo \
+          --for=condition=Available --timeout=120s
+
+        curl -sLO https://github.com/argoproj/argo-workflows/releases/download/v3.5.7/argo-linux-amd64
+        sudo install -o root -g root -m 0755 argo-linux-amd64 /usr/local/bin/argo
+        argo version
+
+    - name: Deploy base (blue) application
+      run: |
+        set -euo pipefail
+        kubectl apply -f k8s/
+
+    - name: Submit workflow and wait for completion
+      run: |
+        set -euo pipefail
+        argo submit argo/workflow-skeleton.yaml \
+          --namespace argo \
+          --watch \
+          --timeout 10m

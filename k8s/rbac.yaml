@@ -1,0 +1,33 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argo-workflow
+  namespace: argo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argo
+rules:
+- apiGroups:
+  - ""
+  - extensions
+  - apps
+  - networking.k8s.io
+  - apiextensions.k8s.io
+  resources: ["*"]
+  verbs: ["*"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: argo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argo
+subjects:
+- kind: Group
+  name: system:serviceaccounts:argo
+  apiGroup: rbac.authorization.k8s.io

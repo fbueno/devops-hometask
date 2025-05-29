@@ -1,0 +1,25 @@
+---
+# Playbook executed by Argo step "create-green"
+# Inventory will be the Kubernetes cluster via the community.kubernetes collection
+- name: Blue/Green switch traffic
+  hosts: localhost
+  gather_facts: false
+  no_log: true
+  collections:
+    - kubernetes.core
+  vars:
+    app_name: "{{ app_name | default('demo-app') }}"
+    release: "{{ release | default('green') }}"
+  tasks:
+    # TODO 3: (Later step) Patch Service selector to release=green **atomically**
+    #         This task can live in a separate play that the workflow calls
+    - name: "Switch traffic to {{ release }} deployment"
+      kubernetes.core.k8s:
+        state: patched
+        kind: Service
+        namespace: default
+        name: "{{ app_name }}"
+        definition:
+          spec:
+            selector:
+              release: "{{ release }}"

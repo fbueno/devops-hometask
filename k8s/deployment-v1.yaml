@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-app-blue
+  labels:
+    app: demo-app
+    release: blue
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: demo-app
+      release: blue
+  template:
+    metadata:
+      labels:
+        app: demo-app
+        release: blue
+    spec:
+      containers:
+      - name: web
+        image: nginxdemos/hello:plain-text
+        ports:
+        - containerPort: 80
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          periodSeconds: 5

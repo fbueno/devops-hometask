@@ -1,0 +1,91 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: bluegreen-
+spec:
+  entrypoint: nightly-release
+  serviceAccountName: argo-workflow       # created by Argo quick-start
+  onExit: rollback        # always invoked
+  templates:
+  - name: nightly-release
+    dag:
+      tasks:
+      - name: lint
+        template: lint
+
+      - name: create-green
+        dependencies: [lint]
+        template: ansible
+        arguments:
+          parameters:
+          - name: play
+            value: create-green.yml
+
+      # TODO: add smoke-test, switch-traffic, etc.
+      - name: smoke-test
+        dependencies: [create-green]
+        template: smoke-test
+
+      - name: switch-traffic
+        dependencies: [smoke-test]
+        template: ansible
+        when: "{{ taks.smoke-test.status }} = Succeeded"
+        arguments:
+          parameters:
+          - name: play
+            value: switch-traffic.yaml
+
+  # --- generic template to run ansible-runner ------------------
+  - name: ansible
+    inputs:
+      parameters:
+      - name: play
+    git:
+      path: /devops-hometask
+      repo: https://github.com/fbueno/devops-hometask.git
+    container:
+      image: quay.io/ansible/ansible-runner:latest
+      command: [bash, -exc]
+      args:
+      - |
+        cd /devops-hometask
+        ansible-runner run ansible -p {{inputs.parameters.play}}
+
+  # --- lint ----------------------------------------------------
+  - name: lint
+    git:
+      path: /devops-hometask
+      repo: https://github.com/fbueno/devops-hometask.git
+    script:
+      image: python:3.12-alpine
+      command: [sh]
+      source: |
+        pip install --quiet ansible-lint yamllint
+        cd /devops-hometask
+        ansible-lint .
+        yamllint -d relaxed .
+
+  # --- smoke-test ----------------------------------------------------
+  - name: smoke-test
+    script:
+      image: curlimages/curl
+      command: [bash]
+      source: |
+        ips=$(kubectl get pods -n default -l  release=grenn -o custom-colums=ip:.status.podIP --no-headers)
+        for pod in $ips
+        do
+          echo "Smoke test pod $pod"
+          curl --fail http://${pod}/ || exit $?
+        done
+
+  # --- rollback skeleton --------------------------------------
+  - name: rollback
+    dag:
+      tasks:
+      - name: cleanup
+        template: ansible
+        arguments:
+          parameters:
+          - name: play
+            value: rollback.yml
