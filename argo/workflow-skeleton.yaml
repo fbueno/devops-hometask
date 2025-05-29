@@ -6,7 +6,6 @@ metadata:
 spec:
   entrypoint: nightly-release
   serviceAccountName: argo-workflow       # created by Argo quick-start
-  onExit: rollback        # always invoked
   templates:
   - name: nightly-release
     dag:
@@ -35,6 +34,11 @@ spec:
           parameters:
           - name: play
             value: switch-traffic.yaml
+      # Is this needed? If smoke test fails it doesnt switch traffic
+      - name: rollback
+        dependencies: [smoke-test]
+        template: rollback
+        when: "{{tasks.smoke-test.status}} == 'Failed'"
 
   # --- generic template to run ansible-runner ------------------
   - name: ansible
