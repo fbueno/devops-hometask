@@ -1,3 +1,17 @@
+# Disclaimer
+
+There are a lot of room for improvement. From the top of my head I can think of:
+
+- Make ansible and workflow more dynamic so it's possible to deploy any version/color
+    - Allow branch/tag as inputs in workflow for example
+    - Verify if the color being deployed is the same as the live one
+- Improve CI messages because it's too noisy
+- Use secrets and not a public repo
+- Specify only required permissions for service accounts
+- Provide previous built docker images so it doesnt spend time installing tools
+- Clean the linting messages/warnings
+
+
 # DevOps Home Task – Blue/Green Runbook (Starter)
 
 | dir / file | purpose |
